@@ -1,0 +1,17 @@
+I have a problem statmenet I need to find a solution for. 
+
+The problem statement is described in PRD.md
+
+Raw information is present in public_cases.json and Interviews.md
+
+I've done an initial attempt at finding a solution and its logic is present in legacy calculate.py
+
+I want to take a slightly different approach.
+
+First I want you to clearly and thouroughly analyze the information from Figgue_1. This is a plot of all the 1000 example cases from the public_Cases.json files.
+
+Based on that and the Raw information. I want you do thefollowing: 
+
+1. Generate a list of important domensions/factors to consider in trying to establish a set of rules in computing the final result. 
+2. Write down those dimensions/factors clearly and crisply but concisely in a file called Dimensions.txt.
+3. Validate that the domensions/factors correlate with the plots fro the figure.
