@@ -170,29 +170,43 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
         elif total_receipts_amount > 400:
             # HIGH RECEIPT SINGLE-DAY: These need careful balance
             # Pattern analysis shows they should get around $1400-1500 range
+            # 1d_extreme: 5 cases, avg error $316, 100% over-predicted - NEEDS FIX
             if total_receipts_amount > 1500:
-                # Very high expenses - cap at reasonable level
-                total_reimbursement = mileage_reimbursement + 1200
+                # Very high expenses - cap at reasonable level but reduce over-prediction
+                total_reimbursement = mileage_reimbursement + 1000  # Reduced from 1200
             elif total_receipts_amount > 1000:
-                # High expenses - generous treatment
-                total_reimbursement = mileage_reimbursement + 1000
+                # High expenses - generous treatment but controlled
+                total_reimbursement = mileage_reimbursement + 800   # Reduced from 1000
             elif total_receipts_amount > 700:
                 # Medium-high expenses
-                total_reimbursement = mileage_reimbursement + 800
+                total_reimbursement = mileage_reimbursement + 600   # Reduced from 800
             else:
-                # Moderate expenses
-                total_reimbursement = mileage_reimbursement + 600
+                # Moderate expenses (400-700 range)
+                total_reimbursement = mileage_reimbursement + 400   # Reduced from 600
+        elif total_receipts_amount >= 100:
+            # MEDIUM RECEIPT SINGLE-DAY TRIPS - CRITICAL FIXES
+            # 1d_medium: Now fixed ✅ 
+            # 1d_ultra: $136 avg error, still problematic - URGENT FIX
+            # 1d_very_high: $152 avg error, 100% over-predicted - needs balance
+            if total_receipts_amount >= 400:  # 1d_very_high range (400-700)
+                # 1d_very_high: $152 avg error, 100% over-predicted - reduce over-prediction
+                total_reimbursement = mileage_reimbursement + 250  # Reduced for balance (was 400)
+            elif total_receipts_amount >= 300:  # 1d_ultra range (300-400)
+                # 1d_ultra: URGENT FIX - $136 avg error, 81% under-predicted
+                total_reimbursement = mileage_reimbursement + 400  # Increased for 1d_ultra fix (was 350)
+            else:  # 1d_medium range (100-300) - now fixed
+                total_reimbursement = mileage_reimbursement + 200  # Keep current level
         else:
-            # Standard single-day calculation for reasonable expenses
+            # Standard single-day calculation for low expenses
             if miles_traveled > 800:
-                # High-mileage, reasonable expenses
+                # High-mileage, low expenses
                 total_reimbursement = mileage_reimbursement + 400  # Flat high-mileage bonus
             else:
                 # Standard single-day calculation
                 total_reimbursement = mileage_reimbursement + 100  # Base single-day rate
             
     elif trip_duration_days in [2, 3]:
-        # SHORT TRIP TIER - SYSTEMATIC FIXES for ultra/extreme receipt patterns
+        # SHORT TRIP TIER - ENHANCED SYSTEMATIC FIXES for priority patterns
         if receipts_per_day > 400:  # Ultra/extreme receipts
             # Pattern analysis shows these are consistently under-predicted
             if trip_duration_days == 2:
@@ -201,20 +215,42 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
             else:  # 3-day trips
                 # 3d_ultra: 25 cases, 88% under-predicted, avg error $259
                 # 3d_extreme: 5 cases, 100% under-predicted, avg error $381
-                total_reimbursement *= 1.15  # Higher bonus for 3-day extreme spending
+                # 3d_very_high: $218 avg error, 89% under-predicted - PRIORITY FIX
+                total_reimbursement *= 1.2  # Increased bonus (was 1.15) for priority patterns
         elif receipts_per_day > 300:
-            # Very high receipts - moderate adjustment
+            # Very high receipts - enhanced adjustment
             if trip_duration_days == 3:
-                # 3d_very_high: 100% under-predicted, avg error $362
-                total_reimbursement *= 1.05  # Small bonus
+                # 3d_very_high: HIGH PRIORITY FIX - $218 avg error
+                # 3d_high: $154 avg error, 100% under-predicted - PRIORITY FIX
+                total_reimbursement *= 1.15  # Increased bonus (was 1.05) for priority fixes
             else:
-                total_reimbursement *= 0.9  # Light penalty for 2-day high spending
+                # 2d_very_high: $137 avg error, 100% under-predicted - PRIORITY FIX
+                total_reimbursement *= 1.1   # Bonus instead of penalty (was 0.9)
+        elif receipts_per_day > 200:
+            # High receipts - improved handling
+            if trip_duration_days == 3:
+                # 3d_high pattern improvement
+                total_reimbursement *= 1.1   # Good bonus for 3d_high
+            else:
+                total_reimbursement *= 1.05  # Small bonus for 2-day high spending
+        elif receipts_per_day < 100:
+            # Low receipts - need better handling for some patterns
+            if trip_duration_days == 2:
+                # 2d_low: $51 avg error, 100% under-predicted - PRIORITY FIX
+                total_reimbursement *= 1.1   # Bonus to fix 2d_low systematic issue
+            else:
+                total_reimbursement *= 1.05  # Small bonus for 3d_low
         else:
-            # Standard/low receipts - minimal adjustments
-            total_reimbursement *= 1.0  # No penalty
+            # Standard/medium receipts - minimal adjustments
+            if trip_duration_days == 1:
+                # 1d_medium: $85 avg error, 100% under-predicted - PRIORITY FIX
+                # 1d_ultra: $136 avg error, 81% under-predicted - PRIORITY FIX
+                total_reimbursement *= 1.1   # Bonus for 1d patterns
+            else:
+                total_reimbursement *= 1.05  # Small bonus for standard cases
     
     elif trip_duration_days in [4, 5]:
-        # 4-5 DAY TRIPS - SYSTEMATIC FIXES for extreme/ultra receipt cases
+        # 4-5 DAY TRIPS - ENHANCED SYSTEMATIC FIXES for priority patterns
         if receipts_per_day > 450:
             # Very high receipts per day - SYSTEMATIC FIX based on pattern analysis
             if trip_duration_days == 5:
@@ -222,35 +258,50 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
                 # Pattern analysis: 5d_extreme shows 95% under-predicted by avg $352
                 if receipts_per_day > 500:
                     # Extremely high - need much better treatment 
-                    total_reimbursement *= 1.0   # No penalty (was 0.95)
+                    total_reimbursement *= 1.05  # Small bonus (was 1.0)
                 else:
                     # Very high but not extreme - small bonus
-                    total_reimbursement *= 1.05  # Small bonus (was 1.0)
+                    total_reimbursement *= 1.1   # Increased bonus (was 1.05)
             else:
-                # 4-day trips with extreme receipts - SYSTEMATIC FIX  
-                # Pattern analysis: 4d_extreme shows 100% under-predicted by avg $412
+                # 4-day trips with extreme receipts - MAJOR FIX NEEDED
+                # 4d_extreme: $312 avg error, 83% under-predicted - TOP PRIORITY  
                 # Pattern analysis: 4d_ultra shows 94% under-predicted by avg $423
-                if receipts_per_day > 500:  # Ultra high
-                    total_reimbursement *= 1.0   # No penalty (was 0.95)
-                else:  # Extreme
-                    total_reimbursement *= 1.05  # Small bonus (was 0.95)
+                if receipts_per_day > 500:  # Ultra high (4d_ultra)
+                    total_reimbursement *= 1.1   # Increased bonus (was 1.0)
+                else:  # Extreme (4d_extreme - TOP PRIORITY)
+                    total_reimbursement *= 1.25  # Strong bonus (was 1.05) - MAJOR FIX
         elif receipts_per_day > 350:
-            # High receipts per day - moderate handling
+            # High receipts per day - CRITICAL FIXES for degrading patterns
             if trip_duration_days == 5:
-                # 5-day trips with high (but not extreme) receipts
+                # 5d_high: $252 avg error, still problematic - URGENT FIX
                 if receipts_per_day > 400:
-                    # High receipts on 5-day trip - small penalty
-                    total_reimbursement *= 0.9  # Small penalty (was 0.95)
+                    # High receipts on 5-day trip - stronger bonus needed
+                    total_reimbursement *= 1.15  # Much stronger bonus (was 1.05) - URGENT FIX
                 else:
-                    # Moderate-high receipts - minimal penalty
-                    total_reimbursement *= 0.95  # Very small penalty
+                    # Moderate-high receipts - stronger bonus
+                    total_reimbursement *= 1.2   # Much stronger bonus (was 1.1) - URGENT FIX
             else:
-                # 4-day trips with high receipts - less harsh penalty
-                total_reimbursement *= 0.9   # Less harsh penalty (was 0.8)
+                # 4-day trips with high receipts - improved treatment
+                total_reimbursement *= 1.05  # Small bonus (was 1.0) 
+        elif receipts_per_day > 300:
+            # SYSTEMATIC FIX: 4d_very_high pattern (avg error $336, 100% under-predicted)
+            if trip_duration_days == 4:
+                total_reimbursement *= 1.2  # Strong bonus to fix systematic under-prediction
+            elif trip_duration_days == 5:
+                # 5d_high pattern also needs fix - ENHANCED
+                total_reimbursement *= 1.15  # Increased bonus (was 1.1) for 5d_high priority fix
+            else:
+                total_reimbursement *= 1.0  # Neutral for other durations
         else:
-            # Standard handling for reasonable spending
+            # Standard handling for reasonable spending - ENHANCED FIXES
             if trip_duration_days == 5:
-                total_reimbursement *= 1.1  # Good bonus for 5-day trips
+                # 5d_low: $153 avg error, 93% over-predicted - URGENT OVER-PREDICTION FIX
+                if receipts_per_day < 50:  # Very low receipts = 5d_low pattern
+                    total_reimbursement *= 0.9   # Penalty to fix over-prediction (was 1.1)
+                else:
+                    total_reimbursement *= 1.1   # Good bonus for normal 5-day trips
+            else:
+                total_reimbursement *= 1.05  # Standard bonus for 4-day trips
     
     elif trip_duration_days == 6:
         # 6-DAY TRIPS - SYSTEMATIC FIX for medium receipt under-predictions
@@ -270,10 +321,35 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
             # Low-medium receipts - standard handling
             total_reimbursement *= 1.0  # No adjustment
             
+    elif trip_duration_days == 7:
+        # 7-DAY TRIPS - CRITICAL FIXES for patterns getting worse
+        # 7d_very_high: $314 avg error, getting worse! - URGENT FIX
+        # 7d_medium: $275 avg error, getting worse! - URGENT FIX  
+        # 7d_high: was 100% under-predicted, now fixed well
+        
+        if receipts_per_day >= 300:  # Very high receipts
+            # 7d_very_high pattern: URGENT FIX - $314 avg error, pattern degrading
+            # Analysis shows these have extreme under-prediction bias
+            total_reimbursement *= 1.35  # Much stronger bonus (was 1.25) - URGENT FIX
+        elif receipts_per_day >= 200:  # High receipts  
+            # 7d_high pattern: 100% under-predicted - keep current bonus
+            total_reimbursement *= 1.25  # Keep strong bonus (this worked well)
+        elif receipts_per_day >= 100:  # Medium receipts
+            # 7d_medium pattern: URGENT FIX - $275 avg error, pattern degrading
+            # Analysis shows severe under-prediction bias has returned
+            total_reimbursement *= 1.2   # Much stronger bonus (was 1.05) - URGENT FIX
+        else:
+            # Low receipts on 7-day trip
+            if receipts_per_day < 50:
+                total_reimbursement *= 0.8  # Penalty for suspicious low spending
+            else:
+                total_reimbursement *= 1.1  # Standard bonus for 7-day trips
+            
     elif trip_duration_days >= 8:
         # LONG TRIP TIER - Nuanced approach based on length
         if trip_duration_days >= 14:
             # Very long trips (14+ days) - improve handling based on patterns
+            # 14d_low: 29 cases, avg error $273, 86% under-predicted
             if receipts_per_day > 140:
                 # High daily spending suggests legitimate business travel
                 # Pattern shows these should get better treatment than current
@@ -281,36 +357,78 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
             elif receipts_per_day > 100:
                 # Medium daily spending
                 total_reimbursement *= 1.15  # Modest bonus for reasonable spending
+            elif receipts_per_day < 75:
+                # 14d_low pattern: significant under-prediction issue
+                total_reimbursement *= 1.25  # Strong bonus to fix 14d_low systematic issue
             else:
                 # Low daily spending - but still legitimate long business travel
                 total_reimbursement *= 1.0   # No penalty (was 0.8)
-        elif trip_duration_days >= 12:
-            # 12-13 day trips - slight bonus but controlled
-            total_reimbursement *= 1.15  # Modest bonus
         elif trip_duration_days >= 10:
-            # 10-11 day trips - SYSTEMATIC FIX based on validation analysis
+            # 10-11 day trips - ENHANCED SYSTEMATIC FIXES based on priority patterns
             if trip_duration_days == 11:
-                # 11-day trips: Pattern analysis shows 97% under-predicted 
-                # Need higher bonuses for medium/high receipt cases
+                # 11-day trips: Pattern analysis shows systematic under-prediction
+                # 11d_high: 11 cases, avg error $223, 100% under-predicted  
+                # 11d_medium: 33 cases, avg error $251, 88% under-predicted
                 if receipts_per_day >= 200:  # High receipts
-                    total_reimbursement *= 1.15  # Increased from 1.05
+                    total_reimbursement *= 1.25  # Increased bonus for 11d_high fix
                 elif receipts_per_day >= 100:  # Medium receipts  
-                    total_reimbursement *= 1.2   # Increased from 1.05
+                    total_reimbursement *= 1.3   # Strong bonus for 11d_medium fix (major pattern)
                 else:
                     total_reimbursement *= 1.05  # Minimal bonus for low receipts
             elif trip_duration_days == 10:
-                # 10-day trips: Pattern analysis shows systematic under-prediction
-                # Medium receipts (100-200/day): 100% under-predicted by avg $378
+                # 10-day trips: ENHANCED FIXES for priority patterns
+                # 10d_medium: $171 avg error, 85% under-predicted - PRIORITY FIX
                 if receipts_per_day > 300:
                     total_reimbursement *= 0.95  # Light penalty for very high spending
-                elif receipts_per_day >= 100:  # Medium receipts - major fix needed
-                    total_reimbursement *= 1.25  # Increased from 1.1 
+                elif receipts_per_day >= 100:  # Medium receipts - MAJOR FIX NEEDED
+                    total_reimbursement *= 1.35  # Increased bonus (was 1.3) for 10d_medium priority fix
                 else:
                     total_reimbursement *= 1.1   # Standard bonus for reasonable spending
             else:
                 total_reimbursement *= 1.2  # Reduced bonus for 12+ day trips
+        elif trip_duration_days >= 12:
+            # 12-13 day trips - CRITICAL FIXES for persistent patterns
+            # 12d_medium: $236 avg error, still problematic - URGENT FIX
+            # 12d_high: $203 avg error, still problematic - URGENT FIX  
+            # 13d_medium: 21 cases, avg error $226, 86% under-predicted
+            if receipts_per_day >= 200:  # High receipts
+                # 12d_high: URGENT FIX - $203 avg error still problematic
+                total_reimbursement *= 1.4   # Much stronger bonus (was 1.3) - URGENT FIX
+            elif receipts_per_day >= 100:  # Medium receipts
+                # 12d_medium: URGENT FIX - $236 avg error still problematic
+                total_reimbursement *= 1.5   # Much stronger bonus (was 1.4) - URGENT FIX
+            else:
+                total_reimbursement *= 1.15  # Modest bonus for reasonable spending
         else:  # 8-9 days
-            # 8-9 day trips - moderate bonus, but penalize very high mileage as suspicious
+            # 8-9 day trips - ENHANCED SYSTEMATIC FIXES for priority patterns
+            # 8d_low: $202 avg error, 85% over-predicted - needs over-prediction fix
+            # 9d_high: $111 avg error, 88% under-predicted - PRIORITY FIX
+            # 9d_medium: $195 avg error, 96% under-predicted - PRIORITY FIX
+            
+            if trip_duration_days == 8:
+                # 8-day specific fixes  
+                if receipts_per_day < 75:  # Low receipts
+                    # 8d_low pattern: HIGH PRIORITY - $202 avg error, over-predicting 
+                    total_reimbursement *= 0.95  # Penalty to fix over-prediction (was 1.05)
+                elif 100 <= receipts_per_day < 200:  # Medium receipts
+                    # 8d_medium pattern: was major under-prediction, now balanced
+                    total_reimbursement *= 1.2   # Keep current balance
+                elif receipts_per_day >= 200:  # High+ receipts
+                    total_reimbursement *= 1.15  # Moderate bonus for high spending
+                else:
+                    total_reimbursement *= 1.1   # Standard bonus for 8-day trips
+            elif trip_duration_days == 9:
+                # 9-day specific fixes  
+                if receipts_per_day >= 200:  # High receipts
+                    # 9d_high pattern: PRIORITY FIX - $111 avg error, 88% under-predicted
+                    total_reimbursement *= 1.25  # Increased bonus (was 1.15) for priority fix
+                elif 100 <= receipts_per_day < 200:  # Medium receipts
+                    # 9d_medium pattern: PRIORITY FIX - $195 avg error, 96% under-predicted
+                    total_reimbursement *= 1.3   # Increased bonus (was 1.2) for priority fix
+                else:
+                    total_reimbursement *= 1.1   # Standard bonus
+            
+            # General adjustments for suspicious patterns
             if miles_traveled > 1000:
                 # Very high mileage on shorter trips = suspicious
                 total_reimbursement *= 0.85  # Penalty for suspicious high-mileage short trips
@@ -318,11 +436,6 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
                 total_reimbursement *= 1.0   # No bonus/penalty for high mileage
             else:
                 total_reimbursement *= 1.15  # Standard bonus for normal mileage
-            
-            # Enhanced handling for 9-day trips with moderate receipts
-            if trip_duration_days == 9 and 100 <= receipts_per_day <= 200:
-                # 9-day trips with reasonable spending - need higher bonus
-                total_reimbursement *= 1.25  # Additional bonus for 9-day reasonable spending
             
             # Special case: Very specific "vacation with fake receipts" pattern  
             # Only penalize the specific pattern that matches Case 684
