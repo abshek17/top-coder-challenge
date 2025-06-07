@@ -12,3 +12,4 @@ fi
 
 # Use Python implementation with legacy calculation rules
 python3 calculate_reimbursement.py "$1" "$2" "$3" 
+# python3 calculate_reimbursement_srv.py "$1" "$2" "$3" 
