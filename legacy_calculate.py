@@ -42,7 +42,7 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
     
     # === PER DIEM BASE ===
     # Lisa: "$100 a day seems to be the base"
-    base_per_diem = trip_duration_days * 97  # Reduced from 100 to fix +$32 bias
+    base_per_diem = trip_duration_days * 90  # Reduced from 93 to further fix over-prediction bias
     
     # === RECEIPT PROCESSING (Non-linear) ===
     # Lisa: "Medium-high amounts—like $600-800—seem to get really good treatment"
@@ -147,26 +147,26 @@ def calculate_legacy_reimbursement(trip_duration_days, miles_traveled, total_rec
     if trip_duration_days == 1:
         # Single-day trips get limited mileage bonuses
         if miles_traveled > 800:
-            mileage_bonus = 50  # Very limited bonus for single-day high mileage
+            mileage_bonus = 45  # Reduced from 50 to balance per diem reduction
         elif miles_traveled > 600:
-            mileage_bonus = 30
+            mileage_bonus = 25  # Reduced from 30 to balance per diem reduction
     else:
         # Multi-day trips get full mileage bonuses
         if miles_traveled > 1000:
-            mileage_bonus = 255  # Reduced from 300 to fix over-prediction bias
+            mileage_bonus = 230  # Reduced from 255 to balance per diem reduction
         elif miles_traveled > 800:
-            mileage_bonus = 170  # Reduced from 200 to fix over-prediction bias
+            mileage_bonus = 150  # Reduced from 170 to balance per diem reduction
         elif miles_traveled > 600:
-            mileage_bonus = 100  # Reduced from 120 to fix over-prediction bias
+            mileage_bonus = 85   # Reduced from 100 to balance per diem reduction
         elif miles_traveled > 400:
-            mileage_bonus = 50   # Reduced from 60 to fix over-prediction bias
+            mileage_bonus = 40   # Reduced from 50 to balance per diem reduction
     
     total_reimbursement += mileage_bonus
 
     # Weekend penalty for 6-7 day trips (days 6 and 7 roll into weekend)
-    # TARGETED FIX: Reduce weekend penalty from 10% to 8% (6-7 days had -$128 error)
+    # TARGETED FIX: Reduce weekend penalty from 8% to 4% based on results analysis
     if trip_duration_days in [6, 7]:
-        total_reimbursement *= 0.92  # 8% penalty for weekend days (was 0.90/10%)
+        total_reimbursement *= 0.96  # 4% penalty for weekend days (reduced from 0.92/8%)
 
     # === SWEET SPOT COMBO BONUS ===
     # Marcus's incredible 8-day trip: optimal duration + high mileage + reasonable spending
